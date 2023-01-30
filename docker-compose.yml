@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:12.4
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+
+  web:
+    build: .
+    restart: always
+    command: bash -c " python manage.py makemigrations && python manage.py migrate --noinput && gunicorn email_service.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - .:/mailing_service
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - "8000:8000"
+      - "583:583"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - .:/mailing_service
+    depends_on:
+      - web
+    volumes_from:
+      - web
+    env_file:
+      - .env
+    links:
+      - web:web
+
+  celery:
+    build: .
+    restart: always
+    command: celery -A email_service worker --loglevel=info
+    volumes:
+      - .:/mailing_service
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - rabbitmq
+    links:
+      - rabbitmq:rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    env_file:
+       - .env
+
+volumes:
+  pg_data:
+  rabbitmq_data:
