@@ -3,7 +3,7 @@ from django import template
 from django.core import mail
 from smtplib import SMTPException
 
-from mailing.models import Message, Subscriber, Mailing, Subscription
+from mailing.models import Message, Subscriber, Mailing
 from mailing.serializers import SubscriberSerializer
 from email_service.celeryapp import app
 
@@ -38,8 +38,8 @@ def mailing_subscribers(mailing_id):
 def get_messages_for_subscribers(mailing_id, mail_template_name, mail_subject):
     messages_for_subscribers = set()
 
-    subscribers = Subscriber.objects.filter(subscription__mailing__id=mailing_id)
-    
+    subscribers = Mailing.objects.get(pk=mailing_id).subscribers.all()
+
     if subscribers:
         for subscriber in subscribers:
             message = Message.objects.create(

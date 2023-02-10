@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse ,HttpRequest
 from rest_framework import status
 
-from .models import Subscriber, Mailing, Message, Subscription
-from .serializers import SubscriberSerializer, MailingSerializer, SubscriptionCreateSerializer, SubscriptionListSerializer
+from .models import Subscriber, Mailing, Message
+from .serializers import SubscriberSerializer, MailingSerializer, MailingListSerializer
 
 from PIL import Image
 
@@ -16,22 +16,19 @@ class SubscriberViewSet(viewsets.ModelViewSet):
     queryset = Subscriber.objects.all()
     serializer_class = SubscriberSerializer
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscription.objects.all()
-    http_method_names = ['get', 'post']
+class MailingViewSet(viewsets.ModelViewSet):
+    queryset = Mailing.objects.all()
     serializer_classes = {
-        'create': SubscriptionCreateSerializer,
-        'list' : SubscriptionListSerializer,
+        'create': MailingSerializer,
+        'list' : MailingListSerializer,
+        'retrieve': MailingListSerializer,
+        'partial_update': MailingSerializer
     }
 
-    default_serializer_class = SubscriptionListSerializer
+    default_serializer_class = MailingListSerializer
 
     def get_serializer_class(self):
         return self.serializer_classes.get(self.action, self.default_serializer_class)
-
-class MailingViewSet(viewsets.ModelViewSet):
-    queryset = Mailing.objects.all()
-    serializer_class = MailingSerializer
 
 @api_view(["GET"])
 def image_load(request, pk=0):

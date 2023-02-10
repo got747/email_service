@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '9ittl1)4*a%bm&-s31x73*%52kf@=ee2br#jsv+!1gn_mry9g-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -147,8 +147,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
-CELERY_RESULT_BACKEND = 'amqp://guest:guest@rabbitmq:5672/'
+CELERY_BROKER_URL = 'amqp://guest:guest@0.0.0.0:5672/'
+CELERY_RESULT_BACKEND = 'amqp://guest:guest@0.0.0.0:5672/'
 
 CELERY_BROCKER_TRANSPORT_OPTIONS = {'visibility_timeout': 3600}
 CELERY_ACCEPT_CONTENT = ['application/json']

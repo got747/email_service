@@ -28,6 +28,7 @@ class Mailing(models.Model):
     mailling_start_at = models.DateTimeField(verbose_name='Mailing start')
     subject = models.CharField(verbose_name='Subject of the mailing', max_length=50, blank=True)
     template_name = models.CharField(verbose_name='Template name', max_length=30)
+    subscribers = models.ManyToManyField(Subscriber, related_name='subscribers', db_table='mailing_subscribers')
 
     @property
     def to_send(self):
@@ -81,7 +82,3 @@ class Message(models.Model):
     class Meta:
         verbose_name = 'Message'
         verbose_name_plural = 'Messages'
-
-class Subscription(models.Model):
-    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE)
-    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE)

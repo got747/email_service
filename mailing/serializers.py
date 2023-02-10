@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django import template
-from .models import  Subscriber, Mailing, Subscription
+from .models import  Subscriber, Mailing
 
 class SubscriberSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,40 +21,44 @@ class SubscriberSerializerEmail(serializers.ModelSerializer):
         model = Subscriber
         fields = ('subscriber_email',)
 
-class SubscriptionCreateSerializer(serializers.ModelSerializer):
-    subscriber = SubscriberSerializerEmail(many=True)
-    mailing = serializers.PrimaryKeyRelatedField(queryset=Mailing.objects.all())
+class MailingListSerializer(serializers.ModelSerializer):
+    subscribers = serializers.SerializerMethodField('get_email')
+
+    def validate(self, data):
+        template_name = data.get("template_name")
+        try:
+            template.loader.get_template("email_templates/{}.html".format(template_name))
+        except template.TemplateDoesNotExist:
+            raise serializers.ValidationError(
+                "There is no mailing template {}".format(template_name)
+            )
+        return super(MailingSerializer, self).validate(data)
 
     class Meta:
-        model = Subscription
-        fields = ('subscriber', 'mailing')
+        model = Mailing
+        fields = "__all__"
 
-    def create(self, validated_data):
-        subscribers_data = validated_data.get('subscriber')
-        mailing = validated_data.get('mailing')
-        subscriptions = []
-        for subscriber_data in subscribers_data:
-            subscriber = Subscriber.objects.get(
-                subscriber_email=subscriber_data['subscriber_email']
-            )
-            subscription = Subscription.objects.create(
-                subscriber=subscriber, mailing=mailing
-            )
-            subscriptions.append(subscription)
-        return subscriptions
-
-    def to_representation(self, instance):
-        return self.context.get('request').data
-
-class SubscriptionListSerializer(serializers.ModelSerializer):
-    subscriber = SubscriberSerializerEmail()
-    mailing = serializers.PrimaryKeyRelatedField(queryset=Mailing.objects.all())
-
-    class Meta:
-        model = Subscription
-        fields = ('subscriber', 'mailing')
+    def get_email(self, obj):
+        return obj.subscribers.values('subscriber_email')
 
 class MailingSerializer(serializers.ModelSerializer):
+    subscribers = SubscriberSerializerEmail(many=True, required=False)
+
+    def create(self, validated_data):
+        subscriber = validated_data.get('subscribers')
+        subscribers = Subscriber.objects.filter(subscriber_email__in=subscriber)
+        instance = super().create(validated_data)
+        if subscribers.exists():
+            instance.add(subscribers)
+        return instance
+
+    def update(self, instance, validated_data):
+        subscriber = {sub.get('subscriber_email') for sub in validated_data.get('subscribers')}
+        subscribers = Subscriber.objects.filter(subscriber_email__in=subscriber).values_list('pk',flat=True)
+        if subscribers.exists():
+            instance.subscribers.add(*subscribers)
+        return instance
+
     def validate(self, data):
         template_name = data.get("template_name")
         try:
